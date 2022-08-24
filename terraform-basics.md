@@ -78,7 +78,46 @@ resource "local_file" "test" {
 - bool (`true/false`)
 - any (default)
 - list (`[1, 2, 3]`)
-- set (same as list with no duplicates)
+- set (no duplicates, no ordering)
 - map (key value pair)
-- tuple
-- object
+- tuple (~list)
+- object (~map)
+
+> `any` = no type conversion
+
+> `list(any)` all values should be same type (or) should be convertible to same type at least.
+
+#### Using variables
+
+Different ways of variable definitions and their order or precedence.
+
+- Environment variables - `export TF_VAR_variable=value`
+- Automatically loaded
+  - terraform.tfvars
+  - terraform.tfvars.json
+  - \*.auto.tfvars (_alphabetical order_)
+  - \*.auto.tfvars.json (_alphabetical order_)
+- Command line flags
+  - -var - `-var variable=value`
+  - -var-file - `-var-file test.tfvars`
+
+#### Resource attribute reference
+
+Referencing an attribute of a resource - `resource_type.resource.attribute` - `local_file.myfile.content`
+
+String interpolation is supported - `"${resource_type.resource.attribute}"`
+
+#### Resource Dependencies
+
+- Implicit Dependency - Refer a resource from another.
+- Explicit Dependency - `depends_on` argument
+
+### Output Variables
+
+```terraform
+# main.tf
+output "<variable_name>" {
+  value = "<Refer value from any resource>"
+  <arguments: description, ...>
+}
+```
