@@ -121,3 +121,5 @@ output "<variable_name>" {
   <arguments: description, ...>
 }
 ```
+
+### Terraform States
