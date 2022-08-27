@@ -123,3 +123,21 @@ output "<variable_name>" {
 ```
 
 ### Terraform States
+
+Terraform maintains equivalent entries in **terraform.tfstate** file for the realworld infrastructure.
+
+| Note                                                                                                                   |
+| :--------------------------------------------------------------------------------------------------------------------- |
+| After first `terraform apply`, the terraform state file is created and then gets updated for subsequent infra changes. |
+
+#### Purpose of Terraform State
+
+- Tracking Metadata (_Eg. dependencies between resources_)
+- Performance (_When trying to refresh state of infra with high number of resources_)
+- Collaboration (_Multiple people working with common state, usually a remote state_)
+
+#### Terraform State Considerations
+
+- Terraform state contains **sensitive** data
+- Terraform state `terraform.tfstate` should be stored in Remote State backends like `Amazon S3, Terraform Cloud, Harshicorp Consul, ...`
+- No manual edits, always use terraform state commands.
