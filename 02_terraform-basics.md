@@ -141,3 +141,7 @@ Terraform maintains equivalent entries in **terraform.tfstate** file for the rea
 - Terraform state contains **sensitive** data
 - Terraform state `terraform.tfstate` should be stored in Remote State backends like `Amazon S3, Terraform Cloud, Harshicorp Consul, ...`
 - No manual edits, always use terraform state commands.
+
+| Note                                                                                                                             |
+| :------------------------------------------------------------------------------------------------------------------------------- |
+| Use `-refresh=false` in terraform commands to avoid terrafrom updating the state in-memory cache with the remote objects's state |
