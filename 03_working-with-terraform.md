@@ -1,18 +1,18 @@
 ## Terraform commands
 
-| Command   | Description                                                                                                                                  |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| init      | Initialize working directory. Download plugins.                                                                                              |
-| validate  | Checks whether the configuration is valid. Only syntax validation.                                                                           |
-| plan      | Show changes required by the current configuration                                                                                           |
-| apply     | Create or update infrastructure.                                                                                                             |
-| destroy   | Destroy previously created infrastructure                                                                                                    |
-| fmt       | Reformats the configuration files in the terraform standard style                                                                            |
-| show      | Show the current state or a saved plan                                                                                                       |
-| providers | Show the providers required for this configuration. `mirror` sub-command used to download the providers required in a target local directory |
-| output    | Show output values                                                                                                                           |
-| refresh   | Update the state to match remote systems                                                                                                     |
-| graph     | Generates a Graphviz graph of the configuration. Use graphviz `dot` command to visualize the graph.                                          |
+| Command   | Description                                                                                                                                        |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| init      | Initialize working directory. Download plugins.                                                                                                    |
+| validate  | Checks whether the configuration is valid. Only syntax validation. Checks whether required providers are available in the configuration directory. |
+| plan      | Show changes required by the current configuration                                                                                                 |
+| apply     | Create or update infrastructure.                                                                                                                   |
+| destroy   | Destroy previously created infrastructure                                                                                                          |
+| fmt       | Reformats the configuration files in the terraform standard style                                                                                  |
+| show      | Show the current state or a saved plan                                                                                                             |
+| providers | Show the providers required for this configuration. `mirror` sub-command used to download the providers required in a target local directory       |
+| output    | Show output values                                                                                                                                 |
+| refresh   | Update the state to match remote systems                                                                                                           |
+| graph     | Generates a Graphviz graph of the configuration. Use graphviz `dot` command to visualize the graph.                                                |
 
 | Note                                                                                                             |
 | :--------------------------------------------------------------------------------------------------------------- |
