@@ -1,5 +1,5 @@
 ## AWS Provider
-```
+```terraform
 terraform {
   required_providers {
     aws = {
@@ -23,7 +23,8 @@ provider "aws" {
 
 
 ### IAM
-```
+```terraform
+# Creating a user
 resource "aws_iam_user" "admin-user" {
     name = "lucy"
     tags = {
@@ -31,6 +32,7 @@ resource "aws_iam_user" "admin-user" {
     }
 }
 
+# Creating an IAM policy
 resource "aws_iam_policy" "adminUser" {
     name = "AdminUsers"
     policy = <<EOF
@@ -47,6 +49,7 @@ resource "aws_iam_policy" "adminUser" {
     EOF
 }
 
+# Attaching IAM policy to the user
 resource "aws_iam_user_policy_attachment" "lucy-admin-access" {
     user = aws_iam_user.admin-user.name
     policy_arn = aws_iam_policy.adminUser.arn
@@ -66,4 +69,46 @@ DELIMITER
 ```
 
 ### S3
+```terraform
+# Create a bucket
+resource "aws_s3_bucket" "marvel-cinematic-universe" {
+  bucket = "mcu-202011121359"
+}
+
+# Create an Object in the bucket
+resource "aws_s3_bucket_object" "upload" {
+    bucket = "pixar-studios-2020"
+    key = "woody.jpg"
+    source = "/root/woody.jpg"
+}
+
+```
 ### Dynamo DB
+```terraform
+# Create a DynamoDB table
+resource "aws_dynamodb_table" "project_sapphire_user_data" {
+  name           = "userdata"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "UserId"
+
+  attribute {
+    name = "UserId"
+    type = "N"
+  }
+}
+
+# Create a DynamoDB table item
+resource "aws_dynamodb_table_item" "upload" {
+  table_name = aws_dynamodb_table.project_sapphire_inventory.name 
+  hash_key = aws_dynamodb_table.project_sapphire_inventory.hash_key
+  item = <<EOF
+  {
+    "AssetID": {"N": "1"},
+    "AssetName": {"S": "printer"},
+    "age": {"N": "5"},
+    "Hardware": {"B": "true"}   
+  } 
+  EOF
+}
+
+```
