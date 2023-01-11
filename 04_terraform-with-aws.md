@@ -112,3 +112,50 @@ resource "aws_dynamodb_table_item" "upload" {
 }
 
 ```
+
+### EC2
+```terraform
+# main.tf
+resource "aws_instance" "webserver" {
+  instance_type = "t2.micro"
+  ami = "ami-xyz"
+  tags = {
+    Name = "webserver"
+    Description = "An Nginx web server on Ubuntu"
+  }
+  user_data = <<-EOF
+              #! /bin/bash
+              sudo apt update
+              sudo apt install nginx -y
+              systemctl enable ngnix
+              systemctl start nginx
+              EOF
+  key_name = aws_key_pair.web.id
+  vpc_security_group_ids = [aws_security_group.ssh-access.id]
+}
+
+resource "aws_key_pair" "web" {
+  public_key = file("/root/.ssh/web.pub")
+}
+
+resource "aws_security_group" "ssh-access" {
+  name = "ssh-access"
+  description = "Allow SSH access from internet"
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+output publicip {
+  value = aws_instance.web_server.public_ip
+}
+
+# provider.tf
+provider "aws" {
+  region = "us-east-1"
+}
+
+```
