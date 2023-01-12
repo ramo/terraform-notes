@@ -149,6 +149,16 @@ resource "aws_security_group" "ssh-access" {
   }
 }
 
+# Elastic IP
+resource "aws_eip" "eip" {
+  instance = aws_instance.cerberus.id
+  vpc      = true
+
+  provisioner "local-exec" {
+    command = "echo ${aws_eip.eip.public_dns} > /root/cerberus_public_dns.txt"
+  }
+}
+
 output publicip {
   value = aws_instance.web_server.public_ip
 }

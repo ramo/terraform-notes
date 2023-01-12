@@ -46,6 +46,20 @@ resource "local_file" "test" {  # test - resource name
 
 > Note: Multiple providers can be used in same resource configuration file.
 
+### Resources
+```terraform
+resource "local_file" test {
+  filename = "test.txt"
+  content = "hello"
+}
+```
+> Resource address - \<resource type>.\<resource name>
+> Eg. local_file.test is a resource address
+
+> Arguments - Input provided to resources for creation.
+> Attributes - After resource is created, it exposes attributes of the resources which can be used as output.
+
+
 ### Variables
 
 - variables are defined in `variables.tf` file.
