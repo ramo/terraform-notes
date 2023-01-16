@@ -69,7 +69,18 @@ resource "local_file" "test" {  # test - resource name
 
 `terraform version` command provides the version of the terraform as well as the version of the provider plugins downloaded in the configuration directory. 
 
-#### Version Constraints
+### Version Constraints
+Version constraints are used when configuring:
+- Modules
+- Provider requirements
+- The `required_version` setting in the terraform block
+
+#### Version Constraint Syntax
+`version = ">= 1.2.0, < 2.0.0"`
+
+##### Specify range of supported versions
+- `> 1.2.0, < 2.0.0, != 1.4.0` (between 1.2.0 and 2.0.0 and not 1.4.0)
+- `~> 1.2.0` (Greatest 1.2.x starting from 1.2.1)
 
 Default behavior of Terraform is to download the latest provider plugin. In practical scenarios this is not always desired and may introduce breaking changes. Version constraints are used to specify the version of providers.
 
@@ -84,12 +95,6 @@ terraform {
   }
 }
 ```
-
-##### Specify range of supported versions
-
-- \> 1.2.0, < 2.0.0, != 1.4.0 (between 1.2.0 and 2.0.0 and not 1.4.0)
-- ~> 1.2.0 (Greatest 1.2.x starting from 1.2.1)
-
 
 ### Configuration Directory
 
@@ -117,6 +122,17 @@ resource "local_file" test {
 
 > Arguments - Input provided to resources for creation.
 > Attributes - After resource is created, it exposes attributes of the resources which can be used as output.
+
+#### Resource Targeting
+- Target specific resources in the infra using `-target`
+- `-target` can be used in `plan` `apply` `destroy`
+- Used for applying only part of a plan.
+- Can be used for troubleshooting errors.
+- You can pass multiple `-target` options to target several resources at once.
+
+|Warning|
+|:----|
+|Targeting resources can introduce inconsistencies, so you should only use it in troubleshooting scenarios.|
 
 
 ### Variables
@@ -257,9 +273,13 @@ resource "local_file" "pet" {
 
 | Option                |                                                      |
 | --------------------- | ---------------------------------------------------- |
-| create_before_destroy | Creates the resource first and then destroy older    |
-| prevent_destroy       | Prevents destroy of a resource                       |
-| ignore_changes        | Ignore changes to resource attributes (specific/all) |
+| `create_before_destroy`(bool) | Creates the resource first and then destroy older    |
+| `prevent_destroy`(bool)       | Prevents destroy of a resource                       |
+| `ignore_changes`(list of attribute names)        | Ignore changes to resource attributes (specific/all) |
+|`replace_triggered_by`(list of resource or attribute references)|Replace the resource when any of the referenced items change. Added in terraform 1.2|
+
+### Custom Condition Checks
+`precondition` and `postcondition` blocks with a `lifecycle` block is used specify any conditional checks for resources and data sources.
 
 ## DataSources
 
