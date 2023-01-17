@@ -1,3 +1,90 @@
+- [Introduction](#introduction)
+  * [Challanges with traditional IT Infrastructure](#challanges-with-traditional-it-infrastructure)
+  * [IaC KeyPoints](#iac-keypoints)
+  * [Why Terraform?](#why-terraform)
+  * [Terraform workflow](#terraform-workflow)
+  * [HCL Basics](#hcl-basics)
+  * [Terraform Registry](#terraform-registry)
+  * [Providers](#providers)
+  * [Version Constraints](#version-constraints)
+    + [Version Constraint Syntax](#version-constraint-syntax)
+      - [Specify range of supported versions](#specify-range-of-supported-versions)
+  * [Configuration Directory](#configuration-directory)
+  * [Resources](#resources)
+    + [Resource Targeting](#resource-targeting)
+  * [Variables](#variables)
+    + [Variable Types](#variable-types)
+    + [Using variables](#using-variables)
+    + [Resource attribute reference](#resource-attribute-reference)
+    + [Resource Dependencies](#resource-dependencies)
+  * [Output Variables](#output-variables)
+  * [Terraform States](#terraform-states)
+    + [Purpose of Terraform State](#purpose-of-terraform-state)
+    + [Terraform State Considerations](#terraform-state-considerations)
+- [Terraform commands](#terraform-commands)
+- [Lifecycle Rules](#lifecycle-rules)
+  * [Custom Condition Checks](#custom-condition-checks)
+- [DataSources](#datasources)
+- [Meta Arguments](#meta-arguments)
+  * [Count](#count)
+  * [for-each](#for-each)
+- [AWS Provider](#aws-provider)
+  * [IAM](#iam)
+  * [S3](#s3)
+  * [Dynamo DB](#dynamo-db)
+  * [EC2](#ec2)
+  * [Problems in local state](#problems-in-local-state)
+  * [State Locking](#state-locking)
+  * [Remote state](#remote-state)
+    + [S3 terraform remote state](#s3-terraform-remote-state)
+  * [Terraform state commands](#terraform-state-commands)
+- [Terraform Provisioners](#terraform-provisioners)
+  * [remote-exec](#remote-exec)
+  * [local-exec](#local-exec)
+  * [Considerations with Provisioners](#considerations-with-provisioners)
+  * [Debugging](#debugging)
+  * [Tainting Resources](#tainting-resources)
+    + [taint](#taint)
+    + [untaint](#untaint)
+  * [Terraform import](#terraform-import)
+- [Terraform Modules](#terraform-modules)
+  * [Why Modules?](#why-modules)
+  * [What are Modules?](#what-are-modules)
+  * [Calling a child module](#calling-a-child-module)
+  * [Module resource address](#module-resource-address)
+  * [Using modules from the Registry](#using-modules-from-the-registry)
+- [Terraform buit-in functions](#terraform-buit-in-functions)
+  * [Numeric Functions](#numeric-functions)
+    + [max `max(number...)`](#max-maxnumber)
+    + [min `min(number...)`](#min-minnumber)
+    + [ceil `ceil(number)`](#ceil-ceilnumber)
+    + [floor `floor(number)`](#floor-floornumber)
+  * [String Functions](#string-functions)
+    + [split `split(separator, string)`](#split-splitseparator-string)
+    + [join (`Opposite to split`) `join(separator, list)`](#join-opposite-to-split-joinseparator-list)
+    + [substr `substr(string, offset, length)`](#substr-substrstring-offset-length)
+    + [lower `lower(string)`](#lower-lowerstring)
+    + [upper `upper(string)`](#upper-upperstring)
+    + [title `title(string)`](#title-titlestring)
+  * [Collection Functions](#collection-functions)
+    + [length `length(list|map|string)`](#length-lengthlistmapstring)
+    + [index `index(list, value)`](#index-indexlist-value)
+    + [element `element(list, index)`](#element-elementlist-index)
+    + [contains `contains(list, value)`](#contains-containslist-value)
+    + [keys `keys(map)`](#keys-keysmap)
+    + [values `values(map)`](#values-valuesmap)
+    + [lookup `lookup(map, key, default)`](#lookup-lookupmap-key-default)
+  * [Filesystem Functions](#filesystem-functions)
+    + [file `file(path)`](#file-filepath)
+  * [Type Conversion Functions](#type-conversion-functions)
+    + [toset `toset(list)`](#toset-tosetlist)
+- [Arithmetic and Logical Operators](#arithmetic-and-logical-operators)
+  * [Order of operations](#order-of-operations)
+- [Terraform Workspaces](#terraform-workspaces)
+  * [Workspace commands](#workspace-commands)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 ## Introduction
 
 Infrastructure as Code (IaC) is the managing and provisioning of infrastructure through code instead of through manual processes
@@ -214,6 +301,26 @@ output "<variable_name>" {
   <arguments: description, ...>
 }
 ```
+### Local Values
+- Like local veriables in programming lanaguages.
+- To assign a name to an expression, so the name can be used multiple times.
+- The ability to easily change the value in a central place is the key advantage.
+- `locals` block is used to define the local values.
+- `local.<NAME>` is used to access a local value by name.
+
+```terraform
+locals {
+  common_tags = {
+    Service = local.service_name
+    Owner   = local.owner
+  }
+}
+
+resource "aws_instance" "example" {
+  # ...
+  tags = local.common_tags
+}
+```
 
 ### Terraform States
 
@@ -293,7 +400,7 @@ Similar to resources, but created by external tools and referred as data source 
 
 | Note |
 |:---|
-|`data` blocks don't support `lifecycle` meta argument|
+|`data` block doesn't support `lifecycle` meta argument like resources. But it is used for `precondition` and `postcondiditon`|
 
 ## Meta Arguments
 
@@ -859,6 +966,120 @@ a
 6. `&&`
 7. `||`
 
+## Expressions
+### Conditional expressions
+`condition ? true_val : false_val`
+- The result type of values sholuld be same, otherwise Terraform will attempt to do auto-conversion.
+
+### For expressions
+- `for` expression creates complex type value by transforming another complex type value. 
+- Supports `list` `set` `tuple` `map` `object` as input.
+- Result depends on the brackets. `[] = tuple` and `{} = object`
+- Element ordering is done by terraform using `lexical sorting`. In set of other types, arbitrary ordering is done, so the results should be marked explicitly say using `toset()`.
+- Filtering the elements is supported by `if` clause.
+- If result type is object `{}`, the key should be unique, otherwise Terraform will return an error. Grouping mode can be used to overcome this issue. Symbol `...` is used after value expression to activate grouping mode.
+```
+[for k, v in var.map : length(k) + length(v)]
+
+# i = index
+[for i, v in var.list : "${i} is ${v}"]
+
+{for s in var.list : s => upper(s)}
+
+[for s in var.list : upper(s) if s != ""]
+```
+
+``` terraform
+locals {
+  users_by_role = {
+    for name, user in var.users : user.role => name...
+  }
+}
+```
+
+### Splat expressions
+- A shorthand way of doing instead of `for` expression.
+- Supports `list` `set` `tuple`
+- `[for o in var.list : o.id]` can be written as `var.list[*].id`
+- `[for o in var.list : o.interfaces[0].name]` can be written as `var.list[*].interfaces[0].name`
+- Converts `null` value to `empty tuple`.
+- Converts single value to single element `tuple`.
+- Attribute only splat expression is legacy and uses `.*` instead of `[*]`.
+- `[for o in var.list : o.interfaces][0].name` is written as `var.list.*.interfaces[0].name` using legacy attribute only splat expression.
+
+```terraform
+variable "website_setting" {
+  type = object({
+    index_document = string
+    error_document = string
+  })
+  default = null
+}
+
+resource "aws_s3_bucket" "example" {
+  # ...
+
+  dynamic "website" {
+    for_each = var.website_setting[*]
+    content {
+      index_document = website.value.index_document
+      error_document = website.value.error_document
+    }
+  }
+}
+```
+### Dynamic Block
+- Some resource types uses `repeatable nested blocks` in their arguments. 
+- `dynamic` blocks can be nested.
+- Not possible to generate Meta arguments like `lifecyle` and `provisioner`
+- Overuse will make the configuration hard to read and maintain. Wherever possible always write nested blocks directly. 
+
+```terraform
+variable "ingress_ports" {
+  type = list
+  default = [22, 8080]
+}
+
+resource "aws_security_group" "backend-sg" {
+  name = "backend-sg"
+  vpc_id = aws_vpc.backend-vpc.id
+  
+  dynamic "ingress" {
+    iterator = port
+    for_each = var.ingress_ports
+    content {
+      from_port = port.value
+      to_port = port.value
+      protocol = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+}
+
+output "to_ports" {
+  value = aws_security_group.backend-sg.ingress[*].to_port
+}
+```
+## Terraform Settings
+- `terraform` configuration block is used to configure some behaviors of terraform itself like required minimum verison of Terraform.
+- Only constant values should be used inside the block, no resources, variables, built-in-functions, etc., 
+```terraform
+# Terraform block syntax
+terraform {
+  # ...
+}
+```
+- `cloud` block is used for configuring terraform cloud. CLI driven workflow.
+- `backend` block is used for Terraform state backend.
+- `required_version` argument is used for specifying the version of the Terraform.
+- `required_providers` block is used to manage expected versions of the each provider plugin.
+- `experiments` argument is used for opt in experiment features from Terraform.
+- `provider_meta` nested block is used to pass module specific information to providers.
+
+
+
+
+
 ## Terraform Workspaces
 - Using same configuration directory for multiple set of infrastructures.
 - Terraform state corresponding to each set of infra is stored at `terraform.tfstate.d` directory with the corresponding workspace name.
@@ -872,6 +1093,6 @@ a
 - `terraform workspace delete <workspace>` - Infra becomes dangling. 
 - `terraform workspace show` - Shows the current workspace
 
-
+## Terraform Cloud
 
 
