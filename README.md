@@ -6,6 +6,7 @@
   * [HCL Basics](#hcl-basics)
   * [Terraform Registry](#terraform-registry)
   * [Providers](#providers)
+  * [`alias`: Multiple Provider Configurations](#alias-multiple-provider-configurations)
   * [Version Constraints](#version-constraints)
     + [Version Constraint Syntax](#version-constraint-syntax)
       - [Specify range of supported versions](#specify-range-of-supported-versions)
@@ -18,6 +19,7 @@
     + [Resource attribute reference](#resource-attribute-reference)
     + [Resource Dependencies](#resource-dependencies)
   * [Output Variables](#output-variables)
+  * [Local Values](#local-values)
   * [Terraform States](#terraform-states)
     + [Purpose of Terraform State](#purpose-of-terraform-state)
     + [Terraform State Considerations](#terraform-state-considerations)
@@ -53,6 +55,14 @@
   * [Calling a child module](#calling-a-child-module)
   * [Module resource address](#module-resource-address)
   * [Using modules from the Registry](#using-modules-from-the-registry)
+- [References to Values](#references-to-values)
+  * [Resources](#resources-1)
+  * [Input Variables](#input-variables)
+  * [Local Values](#local-values-1)
+  * [Child Module outputs](#child-module-outputs)
+  * [Data Sources](#data-sources)
+  * [Filesystem and Workspace Info](#filesystem-and-workspace-info)
+  * [Block-Local Values](#block-local-values)
 - [Terraform buit-in functions](#terraform-buit-in-functions)
   * [Numeric Functions](#numeric-functions)
     + [max `max(number...)`](#max-maxnumber)
@@ -80,8 +90,20 @@
     + [toset `toset(list)`](#toset-tosetlist)
 - [Arithmetic and Logical Operators](#arithmetic-and-logical-operators)
   * [Order of operations](#order-of-operations)
+- [Expressions](#expressions)
+  * [Conditional expressions](#conditional-expressions)
+  * [For expressions](#for-expressions)
+  * [Splat expressions](#splat-expressions)
+  * [Dynamic Block](#dynamic-block)
+- [Terraform Settings](#terraform-settings)
 - [Terraform Workspaces](#terraform-workspaces)
   * [Workspace commands](#workspace-commands)
+- [Terraform Cloud](#terraform-cloud)
+  * [What is Terraform Cloud?](#what-is-terraform-cloud-)
+  * [What is Terraform Enterprise?](#what-is-terraform-enterprise-)
+  * [Sentinel](#sentinel)
+  * [Enterprise/Cloud Workspaces](#enterprise-cloud-workspaces)
+  * [The UI and VCS driven Run workflow](#the-ui-and-vcs-driven-run-workflow)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -156,6 +178,55 @@ resource "local_file" "test" {  # test - resource name
 
 `terraform version` command provides the version of the terraform as well as the version of the provider plugins downloaded in the configuration directory. 
 
+### `alias`: Multiple Provider Configurations
+- Per resource or per module basis, selection is made to use which provider.
+- Primary reason is to support multiple region for a cloud platform. Targeting multiple docker hosts or consul hosts, etc.,
+- Provider blocks with same provider name, but with different `alias` meta-argument is used.
+```terraform
+provider "aws" {
+  region = "us-east-1"
+}
+
+provider "aws" {
+  alias = "west"
+  region = "us-west-2"
+}
+```
+```terraform
+terraform {
+  required_providers {
+    mycloud = {
+      source  = "mycorp/mycloud"
+      version = "~> 1.0"
+      configuration_aliases = [ mycloud.alternate ]
+    }
+  }
+}
+```
+- `<PROVIDER NAME>.<ALIAS>` is used to refer the required alternate provider configuration.
+``` terraform
+resource "aws_instance" "foo" {
+  provider = aws.west
+  # ...
+}
+```
+``` terraform
+module "aws_vpc" {
+  source = "./aws_vpc"
+  providers = {
+    aws = aws.west
+  }
+}
+```
+| Note |
+| :----- |
+|Default configuration for a provider is the block without an `alias` meta-argument. Resources that don't set the `provider` meta-argument will use the default provider.|
+
+| Warning |
+|:----|
+|If no default provider configuration is available, Terraform implicitly uses an empty block for the provider's default configuration. If the provider has any required configuration arguments, Terraform will raise an error.|
+
+
 ### Version Constraints
 Version constraints are used when configuring:
 - Modules
@@ -195,7 +266,9 @@ terraform {
 | outputs.tf   | Contains declarations of output of resources            |
 | provider.tf  | Contains provider definitions                           |
 
-> Note: Multiple providers can be used in same resource configuration file.
+| Note |
+|:---|
+|Multiple providers can be used in same resource configuration file. |
 
 ### Resources
 ```terraform
@@ -832,6 +905,10 @@ Two types of modules are available on the Terraform Registry.
 - Verified modules
 - Community modules
 
+The syntax for specifying a module from Terraform registry is `<NAMESPACE>/<NAME>/<PROVIDER>`. Eg: `hashicorp/consul/aws`. 
+
+For the private registry, the syntax is `<HOSTNAME>/<NAMESPACE>/<NAME>/<PROVIDER>`
+
 ```terraform
 module "security-group_ssh" {
     source = "terraform-aws-modules/security-group/aws/modules/ssh"
@@ -847,6 +924,41 @@ Use terraform `init` or `get` (if provider plugins are already downloaded) to do
 |Warning|
 |:---|
 |If version is not provided in the module block, it will always download the latest version of the module and it may bring undesired results.|
+
+## References to Values
+### Resources
+`<RESOURCE TYPE>.<NAME>`
+- If used with `count`, refernce value is a `list` of objects.
+- If used with `for_each`, reference value is a `map` of objects.
+
+### Input Variables
+`var.<NAME>`
+
+### Local Values
+`local.<NAME>`
+- As long as there is no circular dependency, local values can refer other local values in the same `locals` block.
+
+### Child Module outputs
+`module.<MODULE NAME>`
+- Output values of the module can be accessed as `module.<MODULE NAME>.<OUTPUT NAME>`
+- If count is used, value is `list` of elements.
+- If for_each is used, value is `map` of objects.
+
+### Data Sources
+`data.<DATA TYPE>.<NAME>`
+- Same as Resources, only difference is `data.` prefix.
+
+### Filesystem and Workspace Info
+- `terraform.workspace` - Currently selected workspace
+- `path.module` - File system parth of the module where the expression is placed. 
+- `path.root` - Filesytem path of the root module.
+- `path.cwd` - Filesystem path of the original working directory from where the terraform command ran.
+
+### Block-Local Values
+Local values available in the context of certain blocks. 
+- `count.index` - available in resources which uses `count` meta-argument. 
+- `each.key` / `each.value` - available in resources which uses `for_each` meta-argument.
+- `self` - available in `provisioner` and `connection` blocks
 
 ## Terraform buit-in functions
 - Terraform supports only buit-in functions, no support for user-defined functions.
@@ -1094,5 +1206,39 @@ terraform {
 - `terraform workspace show` - Shows the current workspace
 
 ## Terraform Cloud
+### What is Terraform Cloud?
+- Teams can use consistent and reliable terraform environment together.
+- Shared state and secret data.
+- Private registry for sharing terraform modules.
+- Policy control for governing the contents.
+- Access control to approving the infrastructure changes.
+
+### What is Terraform Enterprise?
+- Self hosted distribution of **Terraform Cloud**
+- Organizations with advanced security and compliance needs can purchase it.
+- Private instance with advanced features.
+
+### Sentinel
+- Sentinel policies are availalbe in the **Terraform Cloud Team and Governance tier**.
+- Uses `Sentinel policy language` to define the policies.
+- Reusable libraries from terraform can be imported using `import`.
+- `tfplan` `tfconfig` `tfstate` `tfrun` - 4 imports are provided by Terraform.
+
+### Enterprise/Cloud Workspaces 
+- Terraform Cloud manages infrastructure collections with workspaces instead of directories.
+- State, Variable values, Credentials and Secrets are stored in Workspaces.
+- State versions and Run history also available in Cloud workspaces.
 
 
+### The UI and VCS driven Run workflow
+- Terraform Cloud has three workflows.
+  - UI/VCS driven run workflow (primary mode of operation)
+  - API driven run workflow
+  - CLI driven run workflow
+- Every workspace is associated with a specific branch of VCS repo.
+- Terraform Cloud registers Webhooks with VCS provider.
+- **Speculative Plan** is performed when raising PR in the VCS for the specific branch.
+- PRs originated from fork of the repo can't create Speculative plan. But, in Terraform Enterprise this can be overridden by admins.
+- **At least one manual run is required before using VCS webhook to trigger auto runs.** 
+- Auto apply is possible. 
+- Health assessments (Drift detection and Continuous validation) are available in the Terraform Cloud Business tier.
