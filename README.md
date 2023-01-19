@@ -136,7 +136,7 @@ Infrastructure as Code (IaC) is the managing and provisioning of infrastructure 
 
 - Cloud agnostic
 - Many providers
-- HCL (HarshiCorp Connfiguration Language)
+- HCL (HashiCorp Connfiguration Language)
 - Declarative (*Ansible uses procedural approach*)
 - Terraform State - Maintains the state (*This allows terraform to be declarative. Any given point in time, the configuration files and state file would be enough to give a clear definition of what the infra should look like*)
 - Terraform Import - Import resources created by other IaC tools - Once done, the resource can be managed by Terraform
@@ -173,7 +173,7 @@ resource "local_file" "test" {  # test - resource name
 > registry.terraform.io/hashicorp/local
 >
 > - registry.terraform.io (Hostname)
-> - harshicorp (Organizational Namespace)
+> - hashicorp (Organizational Namespace)
 > - local (Type)
 
 `terraform init` need to be executed to download the plugins in to `.terraform` directory in the terraform project directory.
@@ -251,7 +251,7 @@ Default behavior of Terraform is to download the latest provider plugin. In prac
 terraform {
   required_providers {
     local = {
-      source = "harshicorp/local"
+      source = "hashicorp/local"
       version = "1.4.0"
     }
   }
@@ -367,7 +367,7 @@ String interpolation is supported - `"${resource_type.resource.attribute}"`
 #### Resource Dependencies
 
 - Implicit Dependency - Refer a resource from another.
-- Explicit Dependency - `depends_on` argument
+- Explicit Dependency - `depends_on` meta-argument
 
 ### Output Variables
 
@@ -416,12 +416,12 @@ Terraform maintains equivalent entries in **terraform.tfstate** file for the rea
 #### Terraform State Considerations
 
 - Terraform state contains **sensitive** data
-- Terraform state `terraform.tfstate` should be stored in Remote State backends like `Amazon S3, Terraform Cloud, Harshicorp Consul, ...`
+- Terraform state `terraform.tfstate` should be stored in Remote State backends like `Amazon S3, Terraform Cloud, Hashicorp Consul, ...`
 - No manual edits, always use terraform state commands.
 
 | Note                                                                                                                             |
 | :------------------------------------------------------------------------------------------------------------------------------- |
-| Use `-refresh=false` in terraform commands to avoid terrafrom updating the state in-memory cache with the remote objects's state |
+| Use `-refresh=false` in terraform commands to avoid terrafrom updating the terraform state with the remote objects's state |
 
 
 ## Terraform commands
@@ -483,7 +483,7 @@ Similar to resources, but created by external tools and referred as data source 
 
 `depends_on` and `lifecycle` are example of Meta arguments.
 
-### Count
+### count
 
 Resources are created and managed as a list
 
@@ -519,7 +519,8 @@ Resources are created and managed as map.
 ```terraform
 # main.tf
 resource "local_file" "my-file" {
-  filename = each.value
+  # each.key could be used as well.
+  filename = each.value 
   for_each = var.filename
 }
 
@@ -583,7 +584,7 @@ resource "aws_iam_user" "admin-user" {
 # Creating an IAM policy
 resource "aws_iam_policy" "adminUser" {
     name = "AdminUsers"
-    policy = <<EOF
+    policy = <<-EOF
     {
         "Version": "2012-10-17",
         "Statement": [
@@ -609,7 +610,7 @@ resource "aws_iam_user_policy_attachment" "lucy-admin-access" {
 |Heredoc syntax is used in aws_iam_policy resource block to provide the policy JSON. `file()` function can also be used to provide json file as input here.|
 ```
 # Heredoc Syntax
-[COMMAND] <<DELIMITER
+[COMMAND] <<-DELIMITER
     Line1
     Line2
     Line3
@@ -649,7 +650,7 @@ resource "aws_dynamodb_table" "project_sapphire_user_data" {
 resource "aws_dynamodb_table_item" "upload" {
   table_name = aws_dynamodb_table.project_sapphire_inventory.name 
   hash_key = aws_dynamodb_table.project_sapphire_inventory.hash_key
-  item = <<EOF
+  item = <<-EOF
   {
     "AssetID": {"N": "1"},
     "AssetName": {"S": "printer"},
@@ -731,7 +732,7 @@ provider "aws" {
 - When running one terraform operation, the state is locked by the terraform so other operations need to wait for the lock.
 
 ### Remote state
-- Terraform state data is written to remote data store like s3, HarshiCorp Consul, Terraform Cloud, Google cloud storage, Azure blob storage, etc.,
+- Terraform state data is written to remote data store like s3, HashiCorp Consul, Terraform Cloud, Google cloud storage, Azure blob storage, etc.,
 - Remote backends like s3 supports **State Locking**.
 - State files get automatically loaded and uploaded from the remote backend
 - Most of the remote backends support encryption at rest and in transit, so more secure.
@@ -767,7 +768,8 @@ terraform {
 ## Terraform Provisioners
 - Run tasks/scripts locally or remotely on resources.
 - By default, the provisioners (local/remote) run after the resource creation. This is called Create time provisioners.
-- Destroy time provisioners can be created by when argument. 
+- Destroy time provisioners can be created by `when=destroy` argument.
+- `on_failure` meta-argument used to define failure behavior. `continue` and `fail` are accepted values. 
 ### remote-exec
 - This provisioner used for running tasks/scripts in remote machines. 
 - Network connectivity (Linux-SSH, Windows-WinRM) is required between terrform machine and the remote machine. 
