@@ -134,7 +134,7 @@ Infrastructure as Code (IaC) is the managing and provisioning of infrastructure 
 
 ### Why Terraform?
 
-- Cloud agnostic
+- Cloud agnostic (Same workflow can be followed across Cloud Providers, But still cloud specific code is required)
 - Many providers
 - HCL (HashiCorp Connfiguration Language)
 - Declarative (*Ansible uses procedural approach*)
